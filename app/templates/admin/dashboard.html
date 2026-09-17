@@ -11,13 +11,13 @@
     </div>
 
     <div class="d-flex gap-2">
-        <a href="{{ url_for('alunos') }}" class="btn btn-primary-subtle text-primary fw-semibold btn-sm px-3 py-2 border-0">
+        <a href="{{ url_for('admin.alunos') }}" class="btn btn-primary-subtle text-primary fw-semibold btn-sm px-3 py-2 border-0">
             <i class="fa-solid fa-user-plus me-1"></i> Gerenciar Alunos
         </a>
-        <a href="{{ url_for('professores') }}" class="btn btn-primary-subtle text-primary fw-semibold btn-sm px-3 py-2 border-0">
+        <a href="{{ url_for('admin.professores') }}" class="btn btn-primary-subtle text-primary fw-semibold btn-sm px-3 py-2 border-0">
             <i class="fa-solid fa-briefcase me-1"></i> Gerenciar Professores
         </a>
-        <a href="{{ url_for('relatorios') }}" class="btn btn-primary fw-semibold btn-sm px-3 py-2 shadow-sm">
+        <a href="{{ url_for('admin.relatorios') }}" class="btn btn-primary fw-semibold btn-sm px-3 py-2 shadow-sm">
             <i class="fa-solid fa-file-lines me-1"></i> Gerar Relatório
         </a>
     </div>
@@ -101,7 +101,6 @@
                 <div class="d-flex align-items-end justify-content-between px-2 pt-4" style="height: 220px;">
                     {% for curso, media in frequencia_por_curso %}
                     <div class="d-flex flex-column align-items-center h-100 justify-content-end gap-2">
-                        <!-- Substitua a linha do gráfico por esta: -->
                         <div class="{% if media < 75 %}bg-danger{% else %}bg-primary{% endif %} rounded-top" style="width: 32px; height: calc({{ media|round|int }} * 1%);"></div>
                         <span class="text-muted fw-medium" style="font-size: 11px;">{{ curso }}</span>
                     </div>
@@ -169,9 +168,9 @@
                 </div>
             </div>
 
-            <!-- Alerta 2 (Alunos em risco calculados dinamicamente) -->
+            <!-- Alerta 2 (Corrigido: adicionado 'admin.') -->
             <div class="col-md-4">
-                <a href="{{ url_for('risco_evasao') }}" class="text-decoration-none">
+                <a href="{{ url_for('admin.risco_evasao') }}" class="text-decoration-none">
                     <div class="p-3 rounded-3 bg-danger-subtle border border-danger-subtle d-flex align-items-start gap-3 h-100">
                         <div class="text-danger fs-5">
                             <i class="fa-solid fa-triangle-exclamation"></i>

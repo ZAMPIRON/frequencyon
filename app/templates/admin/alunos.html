@@ -8,7 +8,7 @@
         <h1 class="h4 fw-bold text-dark mb-1">Gerenciamento de Alunos</h1>
         <p class="text-muted mb-0 small">Alunos cadastrados na instituição</p>
     </div>
-    <a href="{{ url_for('novo_aluno') }}" class="btn btn-primary fw-semibold btn-sm px-3 py-2 shadow-sm">
+    <a href="{{ url_for('admin.novo_aluno') }}" class="btn btn-primary fw-semibold btn-sm px-3 py-2 shadow-sm">
         <i class="fa-solid fa-user-plus me-1"></i> Cadastrar Aluno
     </a>
 </div>
@@ -26,7 +26,7 @@
 
 <div class="card border-0 shadow-sm rounded-3 mb-4">
     <div class="card-body p-3">
-        <form method="GET" action="{{ url_for('alunos') }}" class="row g-2">
+        <form method="GET" action="{{ url_for('admin.alunos') }}" class="row g-2">
             <div class="col-md-10">
                 <input type="text" name="busca" class="form-control form-control-sm" placeholder="Buscar por Nome ou Matrícula..." value="{{ busca }}">
             </div>
@@ -76,7 +76,7 @@
                             </span>
                         </td>
                         <td>
-                            <form method="POST" action="{{ url_for('deletar_aluno', id=aluno.id) }}" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir?');">
+                            <form method="POST" action="{{ url_for('admin.deletar_aluno', id=aluno.id) }}" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir?');">
                                 <button type="submit" class="btn btn-outline-danger btn-sm border-0">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>

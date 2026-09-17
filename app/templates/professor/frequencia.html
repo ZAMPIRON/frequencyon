@@ -1,162 +1,53 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FrequencyON - Chamada</title>
-
-  <!-- Bootstrap 5 -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- CSS Personalizado -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-
-<div class="container py-4" style="max-width: 1000px;">
-
-  <!-- Header SENAI -->
-  <div class="topbar-senai rounded-3 p-3 text-white d-flex align-items-center justify-content-between mb-4">
-    <div class="fw-bold fs-5">FrequencyON</div>
-    <div class="opacity-75 small">▾</div>
-  </div>
-
-  <!-- Cards de Resumo -->
-  <div class="row g-3 mb-4">
-    <div class="col-md-4">
-      <div class="card border-0 shadow-sm rounded-3 p-3 h-100">
-        <div class="text-uppercase text-secondary fs-7 fw-semibold">Alunos Presentes</div>
-        <div class="fs-2 fw-bold mt-1" id="total-presentes">{{ total_presentes }}</div>
-        <div class="text-muted small">de {{ total_matriculados }} matriculados</div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card border-0 shadow-sm rounded-3 p-3 h-100">
-        <div class="text-uppercase text-secondary fs-7 fw-semibold">Faltas</div>
-        <div class="fs-2 fw-bold text-senai-red mt-1" id="total-faltas">{{ total_faltas }}</div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card border-0 shadow-sm rounded-3 p-3 h-100">
-        <div class="text-uppercase text-secondary fs-7 fw-semibold">Média Frequência da Turma</div>
-        <div class="fs-2 fw-bold text-senai-green mt-1" id="media-frequencia">{{ media_frequencia }}%</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Instruções -->
-  <div class="card border-0 shadow-sm rounded-3 p-3 mb-4">
-    <div class="fw-bold mb-2 small text-dark">Como alterar a frequência</div>
-    <div class="d-flex align-items-center gap-2 text-secondary small mb-1">
-      <span class="amostra on"></span>
-      <span>Clique uma vez em um quadrado para alternar entre presença e falta.</span>
-    </div>
-    <div class="d-flex align-items-center gap-2 text-secondary small">
-      <span class="amostra late"></span>
-      <span>Clique duas vezes rápido (duplo clique) para marcar atraso — disponível apenas nas duas primeiras aulas do dia.</span>
-    </div>
-  </div>
-
-  <!-- Tabela de Chamada -->
-  <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-4">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-light text-uppercase text-secondary small">
-          <tr>
-            <th class="ps-4">Nome</th>
-            <th class="d-none d-sm-table-cell">Matrícula</th>
-            <th>Data</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for aluno in alunos %}
-          <tr>
-            <td class="ps-4">
-              <div class="d-flex align-items-center gap-3">
-                <div class="avatar">{{ aluno.iniciais }}</div>
-                <span class="fw-medium">{{ aluno.nome }}</span>
-              </div>
-            </td>
-            <td class="d-none d-sm-table-cell text-muted small">{{ aluno.matricula }}</td>
-            <td class="text-muted small">{{ aluno.data }}</td>
-            <td>
-              <div class="d-flex gap-1">
-                {% for estado in aluno.status %}
-                  <div class="bar {{ 'on' if estado == 'presente' else ('late' if estado == 'atraso' else 'off') }}"
-                       data-aluno="{{ aluno.indice }}"
-                       data-barra="{{ loop.index0 }}"
-                       onclick="registrarClique(this)"></div>
-                {% endfor %}
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
+<!-- Seletor de Turmas cadastradas pelo Admin -->
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h4 class="fw-bold mb-0">Chamada do Dia</h4>
+  <form method="GET" action="{{ url_for('professor.chamada') }}" class="d-flex gap-2">
+    <select name="turma_id" class="form-select form-select-sm" onchange="this.form.submit()">
+      {% for turma in turmas %}
+        <option value="{{ turma.id }}" {% if turma_selecionada and turma.id == turma_selecionada.id %}selected{% endif %}>
+          {{ turma.nome }} - {{ turma.curso }}
+        </option>
+      {% endfor %}
+    </select>
+  </form>
 </div>
 
-<script>
-  const timersClique = {};
-
-  function registrarClique(quadrado) {
-    const chave = quadrado.dataset.aluno + "-" + quadrado.dataset.barra;
-
-    if (timersClique[chave]) {
-      clearTimeout(timersClique[chave]);
-      delete timersClique[chave];
-      marcarAtraso(quadrado);
-    } else {
-      timersClique[chave] = setTimeout(() => {
-        delete timersClique[chave];
-        alternarPresenca(quadrado);
-      }, 250);
-    }
-  }
-
-  function aplicarEstado(quadrado, estado) {
-    quadrado.classList.remove("on", "off", "late");
-    if (estado === "presente") quadrado.classList.add("on");
-    else if (estado === "atraso") quadrado.classList.add("late");
-    else quadrado.classList.add("off");
-  }
-
-  function atualizarResumo(dados) {
-    document.getElementById("total-presentes").textContent = dados.total_presentes;
-    document.getElementById("total-faltas").textContent = dados.total_faltas;
-    document.getElementById("media-frequencia").textContent = dados.media_frequencia + "%";
-  }
-
-  function alternarPresenca(quadrado) {
-    const aluno = quadrado.dataset.aluno;
-    const barra = quadrado.dataset.barra;
-
-    // Rota com o prefixo /professor
-    fetch(`/professor/toggle/${aluno}/${barra}`, { method: "POST" })
-      .then(resposta => resposta.json())
-      .then(dados => {
-        if (dados.erro) return;
-        aplicarEstado(quadrado, dados.estado);
-        atualizarResumo(dados);
-      });
-  }
-
-  function marcarAtraso(quadrado) {
-    const aluno = quadrado.dataset.aluno;
-    const barra = quadrado.dataset.barra;
-
-    // Rota com o prefixo /professor
-    fetch(`/professor/atraso/${aluno}/${barra}`, { method: "POST" })
-      .then(resposta => resposta.json())
-      .then(dados => {
-        if (dados.erro) return;
-        aplicarEstado(quadrado, dados.estado);
-        atualizarResumo(dados);
-      });
-  }
-</script>
-
-</body>
-</html>
+<!-- Tabela de Alunos -->
+<table class="table table-hover align-middle mb-0">
+  <thead class="table-light text-uppercase text-secondary small">
+    <tr>
+      <th class="ps-4">Nome</th>
+      <th class="d-none d-sm-table-cell">Matrícula</th>
+      <th>Data</th>
+      <th>Status (10 Aulas)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for aluno in alunos %}
+    <tr>
+      <td class="ps-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="avatar">{{ aluno.iniciais }}</div>
+          <span class="fw-medium">{{ aluno.nome }}</span>
+        </div>
+      </td>
+      <td class="d-none d-sm-table-cell text-muted small">{{ aluno.matricula }}</td>
+      <td class="text-muted small">{{ aluno.data }}</td>
+      <td>
+        <div class="d-flex gap-1">
+          {% for estado in aluno.status %}
+            <div class="bar {{ 'on' if estado == 'presente' else ('late' if estado == 'atraso' else 'off') }}"
+                 data-aluno="{{ aluno.id }}"
+                 data-barra="{{ loop.index0 }}"
+                 onclick="registrarClique(this)"></div>
+          {% endfor %}
+        </div>
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="4" class="text-center text-muted py-4">Nenhum aluno cadastrado nesta turma.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

@@ -1,115 +1,127 @@
 from flask import Blueprint, render_template, jsonify, request
-from datetime import datetime
+from datetime import date, datetime
+from app.bd.database import db, Aluno, Turma, Frequencia
+from app.routes.admin import recalcular_frequencia_turma  # Importe sua função de recálculo
 
-# Criamos o Blueprint 'professor'
 professor_bp = Blueprint('professor', __name__, url_prefix='/professor')
 
 TOTAL_BARRAS = 10
 AULAS_COM_ATRASO_PERMITIDO = (0, 1)
 
-# Dados mockados temporários (ou consultas no Banco de Dados)
-ALUNOS = [
-    {"nome": "André Luiz Melo da Silva", "matricula": "2026.123.456", "presencas": ["presente"]*10, "status_atual": "presente"},
-    {"nome": "Beatriz Silva de Souza",   "matricula": "2026.234.567", "presencas": ["presente"]*10, "status_atual": "presente"},
-    {"nome": "Camila Oliveira Santos",   "matricula": "2026.345.678", "presencas": ["presente"]*9 + ["falta"], "status_atual": "falta"},
-    {"nome": "Diego Costa Pereira",      "matricula": "2026.456.789", "presencas": ["presente"]*10, "status_atual": "presente"},
-    {"nome": "Elena Santos Lima",        "matricula": "2026.567.890", "presencas": ["presente"]*10, "status_atual": "presente"},
-    {"nome": "Felipe Martins Almeida",   "matricula": "2026.678.901", "presencas": ["presente"]*9 + ["falta"], "status_atual": "falta"},
-]
-
-def iniciais(nome: str) -> str:
-    partes = nome.strip().split(" ")
+def obter_iniciais(nome: str) -> str:
+    partes = nome.strip().split(" ") if nome else []
+    if not partes:
+        return "?"
     primeira = partes[0][0] if partes[0] else ""
     segunda = partes[1][0] if len(partes) > 1 else ""
     return (primeira + segunda).upper()
 
-def preparar_alunos():
-    data_hoje = datetime.now().strftime("%d/%m/%Y")
-    alunos_view = []
-    for indice, aluno in enumerate(ALUNOS):
-        alunos_view.append({
-            "indice": indice,
-            "nome": aluno["nome"],
-            "matricula": aluno["matricula"],
-            "data": data_hoje,
-            "iniciais": iniciais(aluno["nome"]),
-            "status": aluno["presencas"],
-        })
-    return alunos_view
-
-def calcular_estatisticas():
-    total_matriculados = len(ALUNOS)
-    total_presentes = sum(1 for a in ALUNOS if a["status_atual"] == "presente")
-    total_faltas = sum(1 for a in ALUNOS if a["status_atual"] in ("falta", "atraso"))
-
-    total_aulas_possiveis = total_matriculados * TOTAL_BARRAS
-    total_quadrados_verdes = sum(a["presencas"].count("presente") for a in ALUNOS)
-    media_frequencia = (total_quadrados_verdes / total_aulas_possiveis) * 100 if total_aulas_possiveis else 0
-
-    return {
-        "total_matriculados": total_matriculados,
-        "total_presentes": total_presentes,
-        "total_faltas": total_faltas,
-        "media_frequencia": f"{media_frequencia:.1f}",
-    }
-
-# Rota principal do professor (Chamada)
 @professor_bp.route('/chamada')
 def chamada():
-    alunos = preparar_alunos()
-    stats = calcular_estatisticas()
+    turma_id = request.args.get('turma_id', type=int)
+    turmas = Turma.query.all()
+    
+    # Se nenhuma turma for selecionada, seleciona a primeira do banco
+    if not turma_id and turmas:
+        turma_id = turmas[0].id
+
+    turma_selecionada = Turma.query.get(turma_id) if turma_id else None
+    alunos_db = Aluno.query.filter_by(turma_id=turma_id).all() if turma_id else []
+
+    hoje = date.today()
+    data_formatada = hoje.strftime("%d/%m/%Y")
+    
+    alunos_view = []
+    total_presentes_hoje = 0
+    total_faltas_hoje = 0
+
+    for aluno in alunos_db:
+        # Busca registros de frequência de hoje para este aluno
+        frequencias_hoje = {
+            f.num_aula: f.status 
+            for f in Frequencia.query.filter_by(aluno_id=aluno.id, data=hoje).all()
+        }
+
+        status_barras = []
+        for i in range(TOTAL_BARRAS):
+            # Se ainda não houver registro no banco para hoje, o padrão é 'presente'
+            st = frequencias_hoje.get(i, 'presente')
+            status_barras.append(st)
+
+        # Contabilização simplificada de hoje
+        if 'falta' in status_barras:
+            total_faltas_hoje += 1
+        else:
+            total_presentes_hoje += 1
+
+        alunos_view.append({
+            "id": aluno.id,
+            "nome": aluno.nome,
+            "matricula": aluno.matricula,
+            "data": data_formatada,
+            "iniciais": obter_iniciais(aluno.nome),
+            "status": status_barras
+        })
+
+    # Estatísticas gerais da turma vindas do Banco de Dados
+    media_frequencia = turma_selecionada.frequencia_media if turma_selecionada else 100.0
 
     return render_template(
         "professor/frequencia.html",
-        alunos=alunos,
-        total_matriculados=stats["total_matriculados"],
-        total_presentes=stats["total_presentes"],
-        total_faltas=stats["total_faltas"],
-        media_frequencia=stats["media_frequencia"],
+        turmas=turmas,
+        turma_selecionada=turma_selecionada,
+        alunos=alunos_view,
+        total_matriculados=len(alunos_db),
+        total_presentes=total_presentes_hoje,
+        total_faltas=total_faltas_hoje,
+        media_frequencia=media_frequencia
     )
 
-# Rota AJAX para alternar presença/falta
-@professor_bp.route('/toggle/<int:aluno_indice>/<int:barra_indice>', methods=["POST"])
-def toggle_presenca(aluno_indice, barra_indice):
-    if aluno_indice < 0 or aluno_indice >= len(ALUNOS):
-        return jsonify({"erro": "aluno inválido"}), 404
-    if barra_indice < 0 or barra_indice >= TOTAL_BARRAS:
-        return jsonify({"erro": "barra inválida"}), 404
 
-    aluno = ALUNOS[aluno_indice]
-    novo_estado = "falta" if aluno["presencas"][barra_indice] != "falta" else "presente"
+@professor_bp.route('/toggle/<int:aluno_id>/<int:barra_indice>', methods=["POST"])
+def toggle_presenca(aluno_id, barra_indice):
+    aluno = Aluno.query.get_or_404(aluno_id)
+    hoje = date.today()
 
-    aluno["presencas"][barra_indice] = novo_estado
-    aluno["status_atual"] = novo_estado
+    freq = Frequencia.query.filter_by(aluno_id=aluno.id, data=hoje, num_aula=barra_indice).first()
+    
+    if not freq:
+        freq = Frequencia(aluno_id=aluno.id, data=hoje, num_aula=barra_indice, status='falta')
+        db.session.add(freq)
+    else:
+        freq.status = 'falta' if freq.status != 'falta' else 'presente'
 
-    stats = calcular_estatisticas()
+    db.session.commit()
+    recalcular_frequencia_aluno(aluno.id)
 
+    turma = Turma.query.get(aluno.turma_id)
     return jsonify({
-        "estado": novo_estado,
-        "total_presentes": stats["total_presentes"],
-        "total_faltas": stats["total_faltas"],
-        "media_frequencia": stats["media_frequencia"],
+        "estado": freq.status,
+        "media_frequencia": turma.frequencia_media if turma else 100.0
     })
 
-# Rota AJAX para marcar atraso
-@professor_bp.route('/atraso/<int:aluno_indice>/<int:barra_indice>', methods=["POST"])
-def marcar_atraso(aluno_indice, barra_indice):
-    if aluno_indice < 0 or aluno_indice >= len(ALUNOS):
-        return jsonify({"erro": "aluno inválido"}), 404
+
+@professor_bp.route('/atraso/<int:aluno_id>/<int:barra_indice>', methods=["POST"])
+def marcar_atraso(aluno_id, barra_indice):
     if barra_indice not in AULAS_COM_ATRASO_PERMITIDO:
-        return jsonify({"erro": "atraso só é permitido nas duas primeiras aulas"}), 400
+        return jsonify({"erro": "Atraso permitido apenas nas 2 primeiras aulas"}), 400
 
-    aluno = ALUNOS[aluno_indice]
-    novo_estado = "presente" if aluno["presencas"][barra_indice] == "atraso" else "atraso"
+    aluno = Aluno.query.get_or_404(aluno_id)
+    hoje = date.today()
 
-    aluno["presencas"][barra_indice] = novo_estado
-    aluno["status_atual"] = novo_estado
+    freq = Frequencia.query.filter_by(aluno_id=aluno.id, data=hoje, num_aula=barra_indice).first()
 
-    stats = calcular_estatisticas()
+    if not freq:
+        freq = Frequencia(aluno_id=aluno.id, data=hoje, num_aula=barra_indice, status='atraso')
+        db.session.add(freq)
+    else:
+        freq.status = 'presente' if freq.status == 'atraso' else 'atraso'
 
+    db.session.commit()
+    recalcular_frequencia_aluno(aluno.id)
+
+    turma = Turma.query.get(aluno.turma_id)
     return jsonify({
-        "estado": novo_estado,
-        "total_presentes": stats["total_presentes"],
-        "total_faltas": stats["total_faltas"],
-        "media_frequencia": stats["media_frequencia"],
+        "estado": freq.status,
+        "media_frequencia": turma.frequencia_media if turma else 100.0
     })

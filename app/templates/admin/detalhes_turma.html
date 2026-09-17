@@ -6,7 +6,7 @@
 <!-- Cabeçalho com Navegação e Botões de Ação -->
 <div class="d-flex align-items-center justify-content-between mb-4">
     <div class="d-flex align-items-center gap-3">
-        <a href="{{ url_for('turmas') }}" class="btn btn-outline-secondary btn-sm rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+        <a href="{{ url_for('admin.turmas') }}" class="btn btn-outline-secondary btn-sm rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
             <i class="fa-solid fa-arrow-left"></i>
         </a>
         <div>
@@ -19,7 +19,7 @@
         <button class="btn btn-primary fw-semibold btn-sm px-3 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAdicionarAluno">
             <i class="fa-solid fa-user-plus me-1"></i> Adicionar Aluno Existente
         </button>
-        <a href="{{ url_for('novo_aluno') }}" class="btn btn-outline-primary fw-semibold btn-sm px-3 py-2">
+        <a href="{{ url_for('admin.novo_aluno') }}" class="btn btn-outline-primary fw-semibold btn-sm px-3 py-2">
             <i class="fa-solid fa-plus me-1"></i> Cadastrar Novo Aluno
         </a>
     </div>
@@ -152,7 +152,7 @@
 
                         <!-- 7. AÇÕES -->
                         <td>
-                            <form method="POST" action="{{ url_for('desvincular_aluno', aluno_id=aluno.id) }}" style="display:inline;">
+                            <form method="POST" action="{{ url_for('admin.desvincular_aluno', aluno_id=aluno.id) }}" style="display:inline;">
                                 <button type="submit" class="btn btn-sm btn-link text-warning p-0 border-0 fw-semibold text-decoration-none">
                                     <i class="fa-solid fa-user-minus me-1"></i>Desvincular
                                 </button>
@@ -170,7 +170,7 @@
 <div class="modal fade" id="modalAdicionarAluno" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST" action="{{ url_for('adicionar_aluno_turma', turma_id=turma.id) }}">
+            <form method="POST" action="{{ url_for('admin.adicionar_aluno_turma', turma_id=turma.id) }}">
                 <div class="modal-header">
                     <h5 class="modal-title h6 fw-bold">Adicionar Aluno à Turma</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
