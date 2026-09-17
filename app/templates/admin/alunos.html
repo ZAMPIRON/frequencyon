@@ -43,6 +43,8 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light small">
                     <tr>
+                        <th>Foto</th>
+                        <th>Nº</th>
                         <th>Matrícula</th>
                         <th>Nome</th>
                         <th>E-mail</th>
@@ -54,6 +56,16 @@
                 <tbody class="small">
                     {% for aluno in alunos %}
                     <tr>
+                        <td>
+                            {% if aluno.foto %}
+                                <img src="{{ aluno.foto }}" alt="{{ aluno.nome }}" class="rounded-circle border object-fit-cover" style="width: 36px; height: 36px;">
+                            {% else %}
+                                <div class="avatar-initial rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-size: 14px;">
+                                    {{ aluno.nome[0] if aluno.nome else 'A' }}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold text-muted">{{ aluno.numero_chamada or '-' }}</td>
                         <td class="fw-bold">{{ aluno.matricula }}</td>
                         <td>{{ aluno.nome }}</td>
                         <td class="text-muted">{{ aluno.email or '-' }}</td>
@@ -73,7 +85,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">Nenhum aluno encontrado no banco de dados.</td>
+                        <td colspan="8" class="text-center text-muted py-4">Nenhum aluno encontrado no banco de dados.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

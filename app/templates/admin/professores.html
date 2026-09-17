@@ -18,20 +18,42 @@
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light small">
                 <tr>
+                    <th>Foto</th>
                     <th>Nome</th>
                     <th>E-mail</th>
                     <th>Departamento</th>
                     <th>Turmas Atribuídas</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody class="small">
-                {% for prof in professores %}
+                {% for professor in professores %}
                 <tr>
-                    <td class="fw-bold">{{ prof.nome }}</td>
-                    <td>{{ prof.email or '-' }}</td>
-                    <td><span class="badge bg-secondary">{{ prof.departamento }}</span></td>
-                    <td>{{ prof.turmas|length }} turma(s)</td>
+                    <td>
+                        {% if professor.foto %}
+                            <img src="{{ professor.foto }}" 
+                                alt="{{ professor.nome }}" 
+                                class="rounded-circle border object-fit-cover" 
+                                style="width: 36px; height: 36px;">
+                        {% else %}
+                            <div class="avatar-initial" style="width: 36px; height: 36px; font-size: 14px;">
+                                {{ professor.nome | inicial }}
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td class="fw-bold">{{ professor.nome }}</td>
+                    <td>{{ professor.email or '-' }}</td>
+                    <td><span class="badge bg-secondary">{{ professor.departamento }}</span></td>
+                    <td>{{ professor.turmas|length }} turma(s)</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('deletar_professor', id=professor.id) }}" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir?');">
+                            <button type="submit" class="btn btn-outline-danger btn-sm border-0">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
                 </tr>
+                    
                 {% else %}
                 <tr>
                     <td colspan="4" class="text-center text-muted py-4">Nenhum professor cadastrado.</td>
@@ -46,7 +68,7 @@
 <div class="modal fade" id="modalProfessor" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST" action="{{ url_for('professores') }}">
+            <form method="POST" action="{{ url_for('professores') }}" enctype="multipart/form-data">
                 <div class="modal-header">
                     <h5 class="modal-title h6 fw-bold">Novo Professor</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -63,6 +85,11 @@
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Departamento</label>
                         <input type="text" name="departamento" class="form-control form-control-sm" required placeholder="Ex: Informática">
+                    </div>
+                    <!-- Novo campo para Upload de Foto -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Foto do Perfil</label>
+                        <input type="file" name="foto" class="form-control form-control-sm" accept="image/*">
                     </div>
                 </div>
                 <div class="modal-footer">
